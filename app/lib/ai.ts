@@ -8,6 +8,7 @@ log("OpenAI client initialized with API key:", !!process.env.OPENAI_API_KEY);
 
 
 const createEmbedding = async (chunk: string) => {
+  
 const embeddingResponse =
   await openai.embeddings.create({
     model: "text-embedding-3-small",

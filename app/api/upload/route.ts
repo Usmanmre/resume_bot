@@ -3,7 +3,7 @@ import path from 'path'
 import { NextResponse } from 'next/server'
 // Import the clean, modern fork here:
 import pdfParse from 'pdf-parse-fork'
-import createEmbedding from '../../lib/embedding'
+import createEmbedding from '../../lib/ai'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads')
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -73,8 +73,9 @@ export async function POST(req: Request) {
   }
   
   try {
-    const embeddingResponse = await createEmbedding(chunks || '')
-    console.log('Embedding response:', embeddingResponse.length)
+    // createEmbedding is an object with a createEmbedding method; call it for each chunk
+    const embeddingResponse = await Promise.all(chunks.map((c) => createEmbedding.createEmbedding(c)))
+    console.log('Embedding response:', embeddingResponse)
   } catch (err: unknown) {
     const e = err as Error
     console.error('Embedding error:', e?.message ?? e)
