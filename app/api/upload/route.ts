@@ -2,9 +2,11 @@ import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
 // Import the clean, modern fork here:
+// @ts-expect-error: missing type declarations for 'pdf-parse-fork'
 import pdfParse from "pdf-parse-fork";
-import {createEmbedding} from "../../lib/embedding";
-import {index} from "../../lib/pineconeCreds";
+import {upsertToPinecone} from "../../lib/embedding";
+import chunkText from "../../lib/chunking";
+
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -16,14 +18,6 @@ async function ensureUploadDir() {
     void err;
     await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
   }
-}
-
-function chunkText(text: string, chunkSize = 800): string[] {
-  const chunks: string[] = [];
-  for (let i = 0; i < text.length; i += chunkSize) {
-    chunks.push(text.slice(i, i + chunkSize));
-  }
-  return chunks;
 }
 
 export async function POST(req: Request) {
@@ -80,37 +74,15 @@ export async function POST(req: Request) {
   let chunks: string[] = [];
 
   try {
-    // Look at how clean this is now! No generic casts needed.
     const data = await pdfParse(buffer);
     const text = data?.text || "";
-    chunks = chunkText(text, 800);
+    chunks = chunkText(text);
+    await upsertToPinecone(chunks, resumeId);
   } catch (err: unknown) {
     const e = err as Error;
     console.error("PDF parse error:", e?.message ?? e);
   }
-  try {
-    // createEmbedding is an object with a createEmbedding method; call it for each chunk
-    for (const chunk of chunks) {
-      const embedding = await createEmbedding(chunk);
-
-      const upsertResponse = await index.upsert({
-        records: [
-          {
-            id: crypto.randomUUID(),
-            values: embedding,
-            metadata: {
-              resumeId,
-              text: chunk,
-            },
-          },
-        ],
-      });
-      console.log("upsertResponse response:", upsertResponse);
-    }
-  } catch (err: unknown) {
-    const e = err as Error;
-    console.error("Embedding error:", e?.message ?? e);
-  }
+  
 
   return NextResponse.json(
     {
