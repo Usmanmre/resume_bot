@@ -1,6 +1,6 @@
 import { log } from "console";
 import OpenAI from "openai";
-import { index } from "./pineconeCreds";
+import { index } from "./Creds";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

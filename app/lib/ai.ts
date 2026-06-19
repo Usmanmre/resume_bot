@@ -1,11 +1,4 @@
-import { log } from "console";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-log("OpenAI client initialized with API key:", !!process.env.OPENAI_API_KEY);
-
+import { openai } from "./Creds";
 
 const createEmbedding = async (chunk: string) => {
   
