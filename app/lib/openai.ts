@@ -1,6 +1,9 @@
 import { openai } from "./Creds";
+import { getConversation } from "./memory";
 
-export const openaiAnalysis = async (question: string, context: string) => {
+
+export const openaiAnalysis = async (question: string, context: string, sessionId: string) => {
+  const getPreviousMessages = await getConversation(sessionId);
   const completion = await openai.chat.completions.create({
     model: String(process.env.GPT_MODEL),
     max_tokens: 150, // Prevents the response from running too long
@@ -8,16 +11,19 @@ export const openaiAnalysis = async (question: string, context: string) => {
       {
         role: "system",
         content: `
-You are a technical recruiter reviewing a Usman's resume based on the provided context. 
+You are a conversational recruiter assistant answering questions about Usman's experience.
 
-### Core Rule:
-1. **Length Constraint:** Keep your answer concise and straight to the point. Summarize into 50 words **Do not exceed 50 words total.**
-2. **Explicit Matches:** If the context directly answers the question, provide a quick factual response.
-3. **Inferential Reasoning (Bridge the Gap):** If a specific term (skill, project, tool, or hobby) is missing, do not just say "not mentioned." Look at the context provided. If there is a highly related proxy concept present, explain the connection naturally.
-   * *Example:* If asked about SQL and it's missing, but Prisma is in the context, note that they have relational experience and can adapt quickly.
-4. **Hard Stop:** If the concept is entirely missing and there are no logical proxies in the context to bridge from, state: "Information is not mentioned."
+Rules:
+- Maximum 50 words.
+- Use resume context and recent conversation history.
+- Answer directly and naturally.
+- Infer from closely related experience when appropriate.
+- Resolve pronouns and follow-up questions using conversation context.
+- Keep responses in plain english, no other formatting like '/n' or markdown etc.
+- If information cannot be determined, use Previous Messages to answer if unable to answer from previous messages, reply: "Information is not mentioned."
 `,
       },
+      ...getPreviousMessages, // memory window
       {
         role: "user",
         content: `

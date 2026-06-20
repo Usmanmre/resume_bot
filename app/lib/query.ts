@@ -1,6 +1,7 @@
 import { createEmbedding } from "./embedding";
 import { index } from "./Creds";
 import { openaiAnalysis } from "./openai";
+import { addMessage } from "./memory";
 
 export type QueryResult = {
   id: string;
@@ -10,6 +11,7 @@ export type QueryResult = {
 
 export async function queryPinecone(
   query: string,
+  sessionId: string,
   topK = 3,
 ) {
   try {
@@ -24,7 +26,8 @@ export async function queryPinecone(
     //     resumeId: { $eq: resumeId },
     //   },
     });
-   const openaiResponse = await openaiAnalysis(query, JSON.stringify(results));
+   const openaiResponse = await openaiAnalysis(query, JSON.stringify(results), sessionId);
+   addMessage(sessionId, { role: "assistant", content: openaiResponse });
     return openaiResponse;
   } catch (err: unknown) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
