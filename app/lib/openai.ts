@@ -19,7 +19,7 @@ Rules:
 - Answer directly and naturally.
 - Infer from closely related experience when appropriate.
 - Resolve pronouns and follow-up questions using conversation context.
-- Keep responses in plain english, no other formatting like '/n' or markdown etc.
+- Keep responses in plain english, no other formatting like '/n' or markdown, no inverted comas "" etc.
 - If information cannot be determined, use Previous Messages to answer if unable to answer from previous messages, reply: "Information is not mentioned."
 `,
       },

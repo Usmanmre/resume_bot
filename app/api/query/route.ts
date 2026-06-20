@@ -1,68 +1,35 @@
-import { openai } from "@/app/lib/Creds";
 import { addMessage } from "@/app/lib/memory";
 import queryPinecone from "@/app/lib/query";
 import { NextResponse } from "next/server";
 
- // Define headers to allow your Vite frontend to access this endpoint
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "http://localhost:5174", // Or use "*" to allow any origin during local dev
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
+// Dynamic CORS handler supporting localhost:5174 and your production domains
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigins = ["http://localhost:5174", "https://usman-portfolio.forenex.org"];
+  
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
+}
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const query = body.query || '';
-  const sessionId = body.sessionId || '';
+  try {
+    const { query = "", sessionId = "" } = await req.json();
 
-  // const rewrittenQuery = await rewriteQuery(query);
-  addMessage(sessionId, { role: "user", content:  query });
-  // console.log("Rewritten Query:", rewrittenQuery);
-  const results = await queryPinecone( query, sessionId);
+    await addMessage(sessionId, { role: "user", content: query });
+    const results = await queryPinecone(query, sessionId);
 
-  return NextResponse.json(
-    results ?? { matches: [] },
-    { status: 200, headers: corsHeaders }
-  );
+    return NextResponse.json(
+      results ?? { matches: [] }, 
+      { status: 200, headers: getCorsHeaders(req) }
+    );
+  } catch (error) {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
 }
 
-
-// Handle CORS Preflight OPTIONS requests automatically
-export async function OPTIONS() {
-  return NextResponse.json({}, {
-    headers: {
-      "Access-Control-Allow-Origin":  "https://usman-portfolio.forenex.org",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    }
-  });
-}
-
-export async function rewriteQuery(
-  messages: string,
-) {
-  const res = await openai.chat.completions.create({
-    model: process.env.GPT_MODEL || '',
-    messages: [
-      {
-        role: "system",
-        content: `
-You convert conversational questions into standalone search queries for a resume database.
-
-Rules:
-- Always resolve pronouns (he, him, his → candidate name)
-- Keep intent intact
-- Make it suitable for vector search
-- Do NOT answer the question
-- Only rewrite it
-        `,
-      },
-      {
-        role: "user",
-        content: JSON.stringify(messages),
-      },
-    ],
-  });
-
-  return res.choices[0].message.content;
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(req) });
 }
