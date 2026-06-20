@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 export async function OPTIONS() {
   return NextResponse.json({}, {
     headers: {
-      "Access-Control-Allow-Origin":  "https://usman-portfolio.forenex.org/",
+      "Access-Control-Allow-Origin":  "https://usman-portfolio.forenex.org",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     }
